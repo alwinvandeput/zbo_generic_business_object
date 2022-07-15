@@ -42,7 +42,7 @@ CLASS zbo_business_object_factory DEFINITION
 
 ENDCLASS.
 
-CLASS ZBO_BUSINESS_OBJECT_FACTORY IMPLEMENTATION.
+CLASS zbo_business_object_factory IMPLEMENTATION.
 
   METHOD get_business_object_by_bor.
 
@@ -50,9 +50,24 @@ CLASS ZBO_BUSINESS_OBJECT_FACTORY IMPLEMENTATION.
 
       WHEN c_bor_names-sales_order.
 
-        business_object = CAST zbo_business_object_i(
-          zsd_sales_order_bo_ft=>get_factory( )->get_sales_order_bo(
-            CONV #( bo_key ) ) ).
+        "--------------------------------------------
+        "This is dynamically programmed, so it can be compiled without
+        "classes ZSD_SALES_ORDER_BO_FT and ZSD_SALES_ORDER_BO exist in the system.
+        "--------------------------------------------
+
+        DATA factory TYPE REF TO object.
+
+        CALL METHOD ('ZSD_SALES_ORDER_BO_FT')=>get_factory
+          RECEIVING
+            factory = factory.
+
+        DATA(sales_order_no) = CONV vbak-vbeln( bo_key ).
+
+        CALL METHOD factory->('ZSD_SALES_ORDER_BO_FT_I~GET_SALES_ORDER_BO')
+          EXPORTING
+            iv_sales_order_no   = sales_order_no
+          RECEIVING
+            rr_instance         = business_object.
 
       WHEN OTHERS.
 
@@ -69,9 +84,9 @@ CLASS ZBO_BUSINESS_OBJECT_FACTORY IMPLEMENTATION.
 
       WHEN c_message_applications-sales_order.
 
-        business_object = CAST zbo_business_object_i(
-          zsd_sales_order_bo_ft=>get_factory( )->get_sales_order_bo(
-            CONV #( message_object_key ) ) ).
+        business_object = get_business_object_by_bor(
+          bo_name = c_bor_names-sales_order
+          bo_key  = conv #( message_object_key ) ).
 
       WHEN OTHERS.
 
